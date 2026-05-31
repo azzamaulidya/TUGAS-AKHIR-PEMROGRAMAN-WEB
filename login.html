@@ -31,5 +31,49 @@
             </div>
         </div>
     </div>
+
+<script>
+    document.getElementById('formLogin').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const btn  = document.getElementById('btnLogin');
+        const data = {
+            username: this.username.value.trim(),
+            password: this.password.value.trim()
+        };
+
+        btn.disabled    = true;
+        btn.textContent = 'Memproses...';
+
+        try {
+            const res  = await fetch('auth.php?action=login', {
+                method:      'POST',
+                headers:     { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body:        JSON.stringify(data)
+            });
+            const json = await res.json();
+
+            if (json.status === 'success') {
+                showAlert('Login berhasil! Mengalihkan...', 'success');
+                setTimeout(() => { window.location.href = 'index.html'; }, 800);
+            } else {
+                showAlert(json.message || 'Login gagal.', 'danger');
+                btn.disabled    = false;
+                btn.textContent = 'Masuk';
+            }
+        } catch (err) {
+            showAlert('Tidak dapat terhubung ke server.', 'danger');
+            btn.disabled    = false;
+            btn.textContent = 'Masuk';
+        }
+    });
+
+    function showAlert(msg, type) {
+        const el = document.getElementById('alertBox');
+        el.className   = `alert alert-${type} mb-3`;
+        el.textContent = msg;
+    }
+</script>
 </body>
 </html>
