@@ -12,7 +12,10 @@
                 <div class="card shadow border-0">
                     <div class="card-header bg-primary text-white text-center fw-bold py-3">DAFTAR KASIR BARU</div>
                     <div class="card-body p-4">
-                        <form>
+
+                        <div id="alertBox" class="alert d-none mb-3"></div>
+
+                        <form id="formRegistrasi">
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Buat Username</label>
                                 <input type="text" name="username" class="form-control" placeholder="Ketik nama pengguna" required>
@@ -25,9 +28,13 @@
                                 <label class="form-label fw-semibold">Ulangi Password</label>
                                 <input type="password" name="konfirmasi_password" class="form-control" placeholder="Ketik ulang password" required>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100 fw-bold py-2">Daftar Akun ➔</button>
+                            <button type="submit" id="btnDaftar" class="btn btn-primary w-100 fw-bold py-2">Daftar Akun ➔</button>
                         </form>
-                        <div class="text-center mt-3"><span class="text-muted">Sudah punya akun?</span> <a href="login.html" class="text-decoration-none fw-bold text-primary">Login</a></div>
+
+                        <div class="text-center mt-3">
+                            <span class="text-muted">Sudah punya akun?</span>
+                            <a href="login.html" class="text-decoration-none fw-bold text-primary">Login</a>
+                        </div>
                     </div>
                 </div>
             </div>
