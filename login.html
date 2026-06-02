@@ -12,7 +12,10 @@
                 <div class="card shadow border-0">
                     <div class="card-header bg-primary text-white text-center fw-bold py-3">LOGIN SISTEM</div>
                     <div class="card-body p-4">
-                        <form>
+
+                        <div id="alertBox" class="alert d-none mb-3"></div>
+
+                        <form id="formLogin">
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Username</label>
                                 <input type="text" class="form-control" name="username" placeholder="Masukkan username" required>
@@ -21,11 +24,17 @@
                                 <label class="form-label fw-semibold">Password</label>
                                 <input type="password" class="form-control" name="password" placeholder="Masukkan password" required>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100 fw-bold py-2">Masuk</button>
+                            <button type="submit" id="btnLogin" class="btn btn-primary w-100 fw-bold py-2">Masuk</button>
                         </form>
-                        <div class="text-center mt-3"><span class="text-muted">Belum punya akun?</span> <a href="registrasi.html" class="text-decoration-none fw-bold text-primary">Registrasi</a></div>
+
+                        <div class="text-center mt-3">
+                            <span class="text-muted">Belum punya akun?</span>
+                            <a href="registrasi.html" class="text-decoration-none fw-bold text-primary">Registrasi</a>
+                        </div>
                         <hr>
-                        <div class="text-center"><a href="index.html" class="text-decoration-none text-secondary">➔ Kembali ke Dashboard</a></div>
+                        <div class="text-center">
+                            <a href="index.html" class="text-decoration-none text-secondary">➔ Kembali ke Dashboard</a>
+                        </div>
                     </div>
                 </div>
             </div>
