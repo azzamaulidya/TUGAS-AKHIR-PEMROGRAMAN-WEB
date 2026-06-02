@@ -33,5 +33,55 @@
             </div>
         </div>
     </div>
+
+<script>
+    document.getElementById('formRegistrasi').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const btn        = document.getElementById('btnDaftar');
+        const password   = this.password.value;
+        const konfirmasi = this.konfirmasi_password.value;
+
+        if (password !== konfirmasi) { showAlert('Password dan konfirmasi tidak cocok!', 'danger'); return; }
+        if (password.length < 6)     { showAlert('Password minimal 6 karakter.', 'danger'); return; }
+
+        const data = {
+            username:            this.username.value.trim(),
+            password:            password,
+            konfirmasi_password: konfirmasi
+        };
+
+        btn.disabled    = true;
+        btn.textContent = 'Mendaftarkan...';
+
+        try {
+            const res  = await fetch('auth.php?action=registrasi', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(data)
+            });
+            const json = await res.json();
+
+            if (json.status === 'success') {
+                showAlert('Registrasi berhasil! Mengarahkan ke login...', 'success');
+                setTimeout(() => { window.location.href = 'login.html'; }, 1500);
+            } else {
+                showAlert(json.message || 'Registrasi gagal.', 'danger');
+                btn.disabled    = false;
+                btn.textContent = 'Daftar Akun ➔';
+            }
+        } catch (err) {
+            showAlert('Tidak dapat terhubung ke server.', 'danger');
+            btn.disabled    = false;
+            btn.textContent = 'Daftar Akun ➔';
+        }
+    });
+
+    function showAlert(msg, type) {
+        const el = document.getElementById('alertBox');
+        el.className   = `alert alert-${type} mb-3`;
+        el.textContent = msg;
+    }
+</script>
 </body>
 </html>
