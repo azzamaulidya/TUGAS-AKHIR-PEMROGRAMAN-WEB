@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Kasir - Transaksi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        #dropdownBarang { position:absolute; z-index:999; background:#fff; border:1px solid #dee2e6;
+                          border-radius:0 0 .375rem .375rem; width:100%; max-height:200px; overflow-y:auto; }
+        #dropdownBarang .item { padding:8px 12px; cursor:pointer; }
+        #dropdownBarang .item:hover { background:#f0f4ff; }
+        .wrapper-cari { position: relative; }
+    </style>
 </head>
 <body class="bg-light">
 
@@ -17,43 +24,45 @@
                     <li class="nav-item"><a class="nav-link" href="update_barang.html">📦 Update Barang</a></li>
                 </ul>
                 <div class="navbar-nav align-items-center">
-                    <a href="login.html" class="nav-link fw-bold text-light px-2">Login</a>
-                    <span class="text-muted mx-1">/</span>
-                    <a href="registrasi.html" class="nav-link fw-bold text-light px-2">Registrasi</a>
+                    <span id="infoUser" class="text-light me-3 small"></span>
+                    <a href="#" id="btnLogout" class="nav-link fw-bold text-warning px-2">Logout</a>
                 </div>
             </div>
         </div>
     </nav>
 
     <div class="container-fluid px-4">
+        <div id="alertGlobal" class="alert d-none mb-3"></div>
         <div class="row">
-            
+
             <div class="col-md-4 mb-4">
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-primary text-white fw-bold py-3">Masukkan Barang Belanjaan</div>
                     <div class="card-body p-4">
-                        <form id="uiFormBelanja">
-                            <div class="mb-4">
+                        <form id="formBelanja">
+                            <input type="hidden" id="selectedIdBarang">
+                            <div class="mb-4 wrapper-cari">
                                 <label class="form-label fw-semibold">Cari Barang</label>
-                                <input type="text" class="form-control" name="namaBarang" placeholder="Ketik nama barang..." required>
+                                <input type="text" class="form-control" id="inputCariBarang" placeholder="Ketik nama barang..." autocomplete="off">
+                                <div id="dropdownBarang" class="d-none"></div>
                             </div>
                             <div class="mb-4">
                                 <label class="form-label fw-semibold">ID Barang</label>
-                                <input type="text" class="form-control bg-light" name="idBarang" readonly>
+                                <input type="text" class="form-control bg-light" id="displayKodeBarang" readonly>
                             </div>
                             <div class="mb-4">
                                 <label class="form-label fw-semibold">Harga (Rp)</label>
-                                <input type="number" class="form-control bg-light" name="hargaBarang" readonly>
+                                <input type="text" class="form-control bg-light" id="displayHarga" readonly>
                             </div>
                             <div class="mb-4">
                                 <label class="form-label fw-semibold text-danger">Stok Gudang</label>
-                                <input type="text" class="form-control bg-warning bg-opacity-10 fw-bold" name="stokBarang" readonly>
+                                <input type="text" class="form-control bg-warning bg-opacity-10 fw-bold" id="displayStok" readonly>
                             </div>
                             <div class="mb-4">
                                 <label class="form-label fw-semibold">Jumlah / Qty</label>
-                                <input type="number" class="form-control" name="qtyBarang" value="1" min="1" required>
+                                <input type="number" class="form-control" id="inputQty" value="1" min="1">
                             </div>
-                            <button type="submit" class="btn btn-primary w-100 fw-bold py-2">Kirim ke Subtotal</button>
+                            <button type="submit" id="btnTambahItem" class="btn btn-primary w-100 fw-bold py-2">Kirim ke Subtotal</button>
                         </form>
                     </div>
                 </div>
@@ -74,52 +83,73 @@
                                 <th>Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr><td colspan="7" class="text-muted">Data keranjang akan dimuat via server...</td></tr>
+                        <tbody id="tabelKeranjang">
+                            <tr><td colspan="7" class="text-muted py-4">Keranjang kosong.</td></tr>
                         </tbody>
                     </table>
                 </div>
-                
-                <div class="mb-3 shadow-sm text-end p-3 rounded fw-bold" style="background-color: #1e2229; color: #ffc107; font-size: 2.2rem; font-family: 'Courier New';">
+
+                <div class="mb-3 shadow-sm text-end p-3 rounded fw-bold"
+                     style="background-color:#1e2229; color:#ffc107; font-size:2.2rem; font-family:'Courier New';">
                     TOTAL BELANJA: <span id="uiTotalAkhir">Rp 0</span>
                 </div>
-                
-                <button class="btn btn-primary btn-lg w-100 fw-bold shadow mb-5" type="button">SELESAI & CETAK STRUK</button>
+
+                <button class="btn btn-primary btn-lg w-100 fw-bold shadow mb-5" id="btnCheckout" type="button" disabled>
+                    SELESAI & CETAK STRUK
+                </button>
 
                 <div class="pt-4 border-top border-2">
-                    <h4 class="fw-bold mb-3 text-dark">📋 Laporan Penjualan Harian</h4>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="fw-bold text-dark mb-0">📋 Laporan Penjualan Harian</h4>
+                        <input type="date" id="inputTanggalLaporan" class="form-control" style="max-width:180px;">
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-bordered table-striped align-middle text-center bg-white">
                             <thead class="table-secondary">
                                 <tr>
                                     <th>No</th>
-                                    <th>No. Nota</th>
-                                    <th>Waktu</th>
+                                    <th>Tanggal</th>
                                     <th>Kasir</th>
                                     <th>Item Terjual</th>
                                     <th>Total</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr><td colspan="6" class="text-muted">Data laporan akan dimuat via server...</td></tr>
+                            <tbody id="tabelLaporan">
+                                <tr><td colspan="5" class="text-muted">Memuat laporan...</td></tr>
                             </tbody>
                             <tfoot class="table-dark">
                                 <tr>
-                                    <td colspan="5" class="text-end">TOTAL PENJUALAN HARI INI:</td>
-                                    <td class="fw-bold fs-5 text-warning">Rp 0</td>
+                                    <td colspan="4" class="text-end">TOTAL PENJUALAN HARI INI:</td>
+                                    <td class="fw-bold fs-5 text-warning" id="totalHarian">Rp 0</td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
-    
+
+    <!-- Modal Struk -->
+    <div class="modal fade" id="modalStruk" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold">✅ Transaksi Berhasil</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center" id="isiStruk" style="font-family:'Courier New';"></div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-success fw-bold" onclick="window.print()">🖨️ Cetak</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let idTrxAktif = null;
+        const BASE_URL = '/TA PBW/TUGAS-AKHIR-PEMROGRAMAN-WEB';
         let modalStruk;
         let debounceTimer;
 
@@ -132,10 +162,9 @@
             document.getElementById('inputTanggalLaporan').addEventListener('change', muatLaporan);
         });
 
-        // Cek session
         async function cekSession() {
             try {
-                const res  = await fetch('auth.php?action=cek_session', { credentials: 'same-origin' });
+                const res  = await fetch(`${BASE_URL}/auth.php?action=cek_session`, { credentials: 'same-origin' });
                 const json = await res.json();
                 if (json.status === 'success') {
                     document.getElementById('infoUser').textContent = `👤 ${json.data.nama_user} (${json.data.nama_level})`;
@@ -145,10 +174,9 @@
             } catch { window.location.href = 'login.html'; }
         }
 
-        // Logout
         document.getElementById('btnLogout').addEventListener('click', async (e) => {
             e.preventDefault();
-            await fetch('auth.php?action=logout', { credentials: 'same-origin' });
+            await fetch(`${BASE_URL}/auth.php?action=logout`, { credentials: 'same-origin' });
             window.location.href = 'login.html';
         });
 
@@ -163,17 +191,17 @@
 
             debounceTimer = setTimeout(async () => {
                 try {
-                    const res  = await fetch(`barang.php?cari=${encodeURIComponent(q)}`, { credentials: 'same-origin' });
+                    const res  = await fetch(`${BASE_URL}/barang.php?cari=${encodeURIComponent(q)}`, { credentials: 'same-origin' });
                     const json = await res.json();
                     const list = json.data ?? [];
 
                     if (list.length === 0) { dropdown.classList.add('d-none'); return; }
 
                     dropdown.innerHTML = list.map(b => `
-                        <div class="item" data-pk="${b.id_barang}" data-kode="${esc(b.kode_barang)}"
-                             data-nama="${esc(b.nama_barang)}" data-harga="${b.harga}" data-stok="${b.stok}">
-                            <strong>${esc(b.nama_barang)}</strong>
-                            <span class="text-muted small ms-2">${esc(b.kode_barang)} — ${formatRupiah(b.harga)} — Stok: ${b.stok}</span>
+                        <div class="item" data-pk="${b.id}" data-kode="${esc(b.kode_produk)}"
+                             data-nama="${esc(b.nama_produk)}" data-harga="${b.harga}" data-stok="${b.stok}">
+                            <strong>${esc(b.nama_produk)}</strong>
+                            <span class="text-muted small ms-2">${esc(b.kode_produk)} — ${formatRupiah(b.harga)} — Stok: ${b.stok}</span>
                         </div>
                     `).join('');
                     dropdown.classList.remove('d-none');
@@ -201,7 +229,6 @@
             dropdown.classList.add('d-none');
         }
 
-        // Tambah item ke keranjang
         document.getElementById('formBelanja').addEventListener('submit', async function(e) {
             e.preventDefault();
             const idBarang = document.getElementById('selectedIdBarang').value;
@@ -214,7 +241,7 @@
             btn.disabled = true;
 
             try {
-                const res  = await fetch('transaksi.php?action=tambah_item', {
+                const res  = await fetch(`${BASE_URL}/transaksi.php?action=tambah_item`, {
                     method:      'POST',
                     headers:     { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
@@ -244,15 +271,13 @@
             document.getElementById('inputQty').value          = 1;
         }
 
-        // Muat keranjang
         async function muatKeranjang() {
             try {
-                const res   = await fetch('transaksi.php?action=keranjang', { credentials: 'same-origin' });
+                const res   = await fetch(`${BASE_URL}/transaksi.php?action=keranjang`, { credentials: 'same-origin' });
                 const json  = await res.json();
                 const data  = json.data;
                 const items = data?.items ?? [];
                 const total = data?.total ?? 0;
-                idTrxAktif  = data?.id_transaksi ?? null;
 
                 const tbody = document.getElementById('tabelKeranjang');
                 if (items.length === 0) {
@@ -272,7 +297,7 @@
                         <td class="fw-bold">${formatRupiah(item.subtotal)}</td>
                         <td>
                             <button class="btn btn-danger btn-sm"
-                                onclick="hapusItem(${item.id_detail})">✕</button>
+                                onclick="hapusItem(${item.id_barang})">✕</button>
                         </td>
                     </tr>
                 `).join('');
@@ -284,11 +309,10 @@
             }
         }
 
-        // Hapus item
-        async function hapusItem(idDetail) {
+        async function hapusItem(idBarang) {
             if (!confirm('Hapus item ini dari keranjang?')) return;
             try {
-                const res  = await fetch(`transaksi.php?action=hapus_item&id=${idDetail}`, {
+                const res  = await fetch(`${BASE_URL}/transaksi.php?action=hapus_item&id=${idBarang}`, {
                     method: 'DELETE', credentials: 'same-origin'
                 });
                 const json = await res.json();
@@ -300,17 +324,15 @@
             } catch { showAlert('Gagal menghapus item.', 'danger'); }
         }
 
-        // Checkout
         document.getElementById('btnCheckout').addEventListener('click', async () => {
-            if (!idTrxAktif) { showAlert('Tidak ada transaksi aktif.', 'warning'); return; }
             if (!confirm('Selesaikan transaksi dan cetak struk?')) return;
 
             try {
-                const res  = await fetch('transaksi.php?action=checkout', {
+                const res  = await fetch(`${BASE_URL}/transaksi.php?action=checkout`, {
                     method:      'POST',
                     headers:     { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
-                    body:        JSON.stringify({ id_transaksi: idTrxAktif })
+                    body:        JSON.stringify({})
                 });
                 const json = await res.json();
 
@@ -341,18 +363,17 @@
             modalStruk.show();
         }
 
-        // Laporan harian
         async function muatLaporan() {
             const tanggal = document.getElementById('inputTanggalLaporan').value;
             try {
-                const res    = await fetch(`transaksi.php?action=laporan_harian&tanggal=${tanggal}`, { credentials: 'same-origin' });
-                const json   = await res.json();
-                const data   = json.data;
-                const rows   = data?.laporan ?? [];
-                const tbody  = document.getElementById('tabelLaporan');
+                const res   = await fetch(`${BASE_URL}/transaksi.php?action=laporan_harian&tanggal=${tanggal}`, { credentials: 'same-origin' });
+                const json  = await res.json();
+                const data  = json.data;
+                const rows  = data?.laporan ?? [];
+                const tbody = document.getElementById('tabelLaporan');
 
                 if (rows.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Belum ada transaksi.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Belum ada transaksi.</td></tr>';
                     document.getElementById('totalHarian').textContent = 'Rp 0';
                     return;
                 }
@@ -360,7 +381,6 @@
                 tbody.innerHTML = rows.map((r, i) => `
                     <tr>
                         <td>${i + 1}</td>
-                        <td class="fw-bold">${esc(r.no_nota ?? '-')}</td>
                         <td>${r.tanggal}</td>
                         <td>${esc(r.kasir)}</td>
                         <td>${r.jumlah_item} item</td>

@@ -42,6 +42,8 @@
     </div>
 
 <script>
+    const BASE_URL = '/TA PBW/TUGAS-AKHIR-PEMROGRAMAN-WEB';
+
     document.getElementById('formLogin').addEventListener('submit', async function(e) {
         e.preventDefault();
 
@@ -55,7 +57,7 @@
         btn.textContent = 'Memproses...';
 
         try {
-            const res  = await fetch('auth.php?action=login', {
+            const res  = await fetch(`${BASE_URL}/auth.php?action=login`, {
                 method:      'POST',
                 headers:     { 'Content-Type': 'application/json' },
                 credentials: 'same-origin',
