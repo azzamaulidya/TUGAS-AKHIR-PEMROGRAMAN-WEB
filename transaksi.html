@@ -17,13 +17,16 @@
                     <li class="nav-item"><a class="nav-link" href="update_barang.html">📦 Update Barang</a></li>
                 </ul>
                 <div class="navbar-nav align-items-center">
-                    <a href="login.html" class="nav-link fw-bold text-light px-2">Login</a>
-                    <span class="text-muted mx-1">/</span>
-                    <a href="registrasi.html" class="nav-link fw-bold text-light px-2">Registrasi</a>
+                    <span id="infoUser" class="text-light me-3"></span>
+                    <a href="#" id="btnLogout" class="nav-link fw-bold text-warning px-2">Logout</a>
                 </div>
             </div>
         </div>
     </nav>
+
+    <div class="container-fluid px-4">
+        <div id="alertGlobal" class="alert d-none"></div>
+    </div>
 
     <div class="container-fluid px-4">
         <div class="row">
@@ -32,28 +35,32 @@
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-primary text-white fw-bold py-3">Masukkan Barang Belanjaan</div>
                     <div class="card-body p-4">
-                        <form id="uiFormBelanja">
-                            <div class="mb-4">
+                        <form id="formBelanja">
+                            <div class="mb-4 position-relative wrapper-cari">
                                 <label class="form-label fw-semibold">Cari Barang</label>
-                                <input type="text" class="form-control" name="namaBarang" placeholder="Ketik nama barang..." required>
+                                <input type="text" class="form-control" id="inputCariBarang" placeholder="Ketik nama barang..." autocomplete="off" required>
+                                <div id="dropdownBarang" class="bg-white border rounded w-100 d-none position-absolute shadow-sm" style="max-height: 250px; overflow-y: auto; z-index: 1050;"></div>
                             </div>
+                            
+                            <input type="hidden" id="selectedIdBarang">
+
                             <div class="mb-4">
-                                <label class="form-label fw-semibold">ID Barang</label>
-                                <input type="text" class="form-control bg-light" name="idBarang" readonly>
+                                <label class="form-label fw-semibold">ID Barang (Kode)</label>
+                                <input type="text" class="form-control bg-light" id="displayKodeBarang" readonly>
                             </div>
                             <div class="mb-4">
                                 <label class="form-label fw-semibold">Harga (Rp)</label>
-                                <input type="number" class="form-control bg-light" name="hargaBarang" readonly>
+                                <input type="text" class="form-control bg-light" id="displayHarga" readonly>
                             </div>
                             <div class="mb-4">
                                 <label class="form-label fw-semibold text-danger">Stok Gudang</label>
-                                <input type="text" class="form-control bg-warning bg-opacity-10 fw-bold" name="stokBarang" readonly>
+                                <input type="text" class="form-control bg-warning bg-opacity-10 fw-bold" id="displayStok" readonly>
                             </div>
                             <div class="mb-4">
                                 <label class="form-label fw-semibold">Jumlah / Qty</label>
-                                <input type="number" class="form-control" name="qtyBarang" value="1" min="1" required>
+                                <input type="number" class="form-control" id="inputQty" value="1" min="1" required>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100 fw-bold py-2">Kirim ke Subtotal</button>
+                            <button type="submit" id="btnTambahItem" class="btn btn-primary w-100 fw-bold py-2">Kirim ke Subtotal</button>
                         </form>
                     </div>
                 </div>
@@ -74,7 +81,7 @@
                                 <th>Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="tabelKeranjang">
                             <tr><td colspan="7" class="text-muted">Data keranjang akan dimuat via server...</td></tr>
                         </tbody>
                     </table>
@@ -84,35 +91,53 @@
                     TOTAL BELANJA: <span id="uiTotalAkhir">Rp 0</span>
                 </div>
                 
-                <button class="btn btn-primary btn-lg w-100 fw-bold shadow mb-5" type="button">SELESAI & CETAK STRUK</button>
+                <button id="btnCheckout" class="btn btn-primary btn-lg w-100 fw-bold shadow mb-5" type="button" disabled>SELESAI & CETAK STRUK</button>
 
                 <div class="pt-4 border-top border-2">
-                    <h4 class="fw-bold mb-3 text-dark">📋 Laporan Penjualan Harian</h4>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="fw-bold m-0 text-dark">📋 Laporan Penjualan Harian</h4>
+                        <input type="date" id="inputTanggalLaporan" class="form-control w-auto">
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-bordered table-striped align-middle text-center bg-white">
                             <thead class="table-secondary">
                                 <tr>
                                     <th>No</th>
                                     <th>No. Nota</th>
-                                    <th>Waktu</th>
+                                    <th>Tanggal</th>
                                     <th>Kasir</th>
                                     <th>Item Terjual</th>
                                     <th>Total</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="tabelLaporan">
                                 <tr><td colspan="6" class="text-muted">Data laporan akan dimuat via server...</td></tr>
                             </tbody>
                             <tfoot class="table-dark">
                                 <tr>
                                     <td colspan="5" class="text-end">TOTAL PENJUALAN HARI INI:</td>
-                                    <td class="fw-bold fs-5 text-warning">Rp 0</td>
+                                    <td id="totalHarian" class="fw-bold fs-5 text-warning">Rp 0</td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
                 </div>
 
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalStruk" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold">Struk Pembelian</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="isiStruk"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">Tutup</button>
+                </div>
             </div>
         </div>
     </div>
@@ -159,7 +184,7 @@
         inputCari.addEventListener('input', () => {
             clearTimeout(debounceTimer);
             const q = inputCari.value.trim();
-            if (q.length < 2) { dropdown.classList.add('d-none'); return; }
+            if (q.length < 1) { dropdown.classList.add('d-none'); return; }
 
             debounceTimer = setTimeout(async () => {
                 try {
@@ -167,13 +192,19 @@
                     const json = await res.json();
                     const list = json.data ?? [];
 
-                    if (list.length === 0) { dropdown.classList.add('d-none'); return; }
+                    if (list.length === 0) { 
+                        dropdown.innerHTML = '<div class="p-3 text-muted small text-center">Barang tidak ditemukan / Stok habis</div>';
+                        dropdown.classList.remove('d-none');
+                        return; 
+                    }
 
                     dropdown.innerHTML = list.map(b => `
-                        <div class="item" data-pk="${b.id_barang}" data-kode="${esc(b.kode_barang)}"
-                             data-nama="${esc(b.nama_barang)}" data-harga="${b.harga}" data-stok="${b.stok}">
-                            <strong>${esc(b.nama_barang)}</strong>
-                            <span class="text-muted small ms-2">${esc(b.kode_barang)} — ${formatRupiah(b.harga)} — Stok: ${b.stok}</span>
+                        <div class="item p-2 border-bottom text-start text-dark" style="cursor: pointer; background: #fff;" 
+                             data-pk="${b.id}" data-kode="${esc(b.kode_produk)}"
+                             data-nama="${esc(b.nama_produk)}" data-harga="${b.harga}" data-stok="${b.stok}"
+                             onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='#fff'">
+                            <strong class="text-primary">${esc(b.nama_produk)}</strong>
+                            <div class="text-muted small">${esc(b.kode_produk)} — ${formatRupiah(b.harga)} — Stok: ${b.stok} Pcs</div>
                         </div>
                     `).join('');
                     dropdown.classList.remove('d-none');
@@ -207,7 +238,7 @@
             const idBarang = document.getElementById('selectedIdBarang').value;
             const qty      = parseInt(document.getElementById('inputQty').value);
 
-            if (!idBarang) { showAlert('Pilih barang terlebih dahulu!', 'warning'); return; }
+            if (!idBarang) { showAlert('Pilih barang terlebih dahulu dari dropdown!', 'warning'); return; }
             if (qty < 1)   { showAlert('Qty minimal 1.', 'warning'); return; }
 
             const btn = document.getElementById('btnTambahItem');
@@ -262,20 +293,24 @@
                     return;
                 }
 
-                tbody.innerHTML = items.map((item, i) => `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td class="text-secondary fw-bold small">${esc(item.kode_barang ?? '-')}</td>
-                        <td class="text-start">${esc(item.nama_barang)}</td>
-                        <td>${formatRupiah(item.harga)}</td>
-                        <td>${item.qty}</td>
-                        <td class="fw-bold">${formatRupiah(item.subtotal)}</td>
-                        <td>
-                            <button class="btn btn-danger btn-sm"
-                                onclick="hapusItem(${item.id_detail})">✕</button>
-                        </td>
-                    </tr>
-                `).join('');
+                tbody.innerHTML = items.map((item, i) => {
+                    const kode = item.kode_produk ?? item.kode_barang ?? '-';
+                    const nama = item.nama_produk ?? item.nama_barang ?? 'Produk';
+                    const idDetail = item.id_detail ?? item.id ?? item.id_barang ?? i;
+                    return `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td class="text-secondary fw-bold small">${esc(kode)}</td>
+                            <td class="text-start">${esc(nama)}</td>
+                            <td>${formatRupiah(item.harga)}</td>
+                            <td>${item.qty}</td>
+                            <td class="fw-bold">${formatRupiah(item.subtotal)}</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm" onclick="hapusItem(${idDetail})">✕</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
 
                 document.getElementById('uiTotalAkhir').textContent = formatRupiah(total);
                 document.getElementById('btnCheckout').disabled = false;
@@ -302,7 +337,6 @@
 
         // Checkout
         document.getElementById('btnCheckout').addEventListener('click', async () => {
-            if (!idTrxAktif) { showAlert('Tidak ada transaksi aktif.', 'warning'); return; }
             if (!confirm('Selesaikan transaksi dan cetak struk?')) return;
 
             try {
@@ -327,14 +361,14 @@
         function tampilStruk(data) {
             const now = new Date().toLocaleString('id-ID');
             document.getElementById('isiStruk').innerHTML = `
-                <div style="font-size:0.8rem; text-align:left; line-height:1.8;">
+                <div style="font-size:0.85rem; text-align:left; line-height:1.8;">
                     <div class="text-center fw-bold mb-2">TOKO BERKAH ABADI</div>
                     <div class="text-center text-muted mb-2">--- STRUK PEMBELIAN ---</div>
                     <div>No. Transaksi: <strong>#${data.id_transaksi}</strong></div>
                     <div>Waktu: ${now}</div>
-                    <hr>
+                    <hr style="border-top: 1px dashed #000;">
                     <div class="fw-bold text-end fs-6">TOTAL: ${formatRupiah(data.total_bayar)}</div>
-                    <hr>
+                    <hr style="border-top: 1px dashed #000;">
                     <div class="text-center text-muted small mt-2">Terima kasih sudah berbelanja!</div>
                 </div>
             `;
