@@ -118,5 +118,268 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let idTrxAktif = null;
+        let modalStruk;
+        let debounceTimer;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            modalStruk = new bootstrap.Modal(document.getElementById('modalStruk'));
+            document.getElementById('inputTanggalLaporan').value = new Date().toISOString().split('T')[0];
+            await cekSession();
+            await muatKeranjang();
+            await muatLaporan();
+            document.getElementById('inputTanggalLaporan').addEventListener('change', muatLaporan);
+        });
+
+        // Cek session
+        async function cekSession() {
+            try {
+                const res  = await fetch('auth.php?action=cek_session', { credentials: 'same-origin' });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    document.getElementById('infoUser').textContent = `👤 ${json.data.nama_user} (${json.data.nama_level})`;
+                } else {
+                    window.location.href = 'login.html';
+                }
+            } catch { window.location.href = 'login.html'; }
+        }
+
+        // Logout
+        document.getElementById('btnLogout').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await fetch('auth.php?action=logout', { credentials: 'same-origin' });
+            window.location.href = 'login.html';
+        });
+
+        // Autocomplete cari barang
+        const inputCari = document.getElementById('inputCariBarang');
+        const dropdown  = document.getElementById('dropdownBarang');
+
+        inputCari.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            const q = inputCari.value.trim();
+            if (q.length < 2) { dropdown.classList.add('d-none'); return; }
+
+            debounceTimer = setTimeout(async () => {
+                try {
+                    const res  = await fetch(`barang.php?cari=${encodeURIComponent(q)}`, { credentials: 'same-origin' });
+                    const json = await res.json();
+                    const list = json.data ?? [];
+
+                    if (list.length === 0) { dropdown.classList.add('d-none'); return; }
+
+                    dropdown.innerHTML = list.map(b => `
+                        <div class="item" data-pk="${b.id_barang}" data-kode="${esc(b.kode_barang)}"
+                             data-nama="${esc(b.nama_barang)}" data-harga="${b.harga}" data-stok="${b.stok}">
+                            <strong>${esc(b.nama_barang)}</strong>
+                            <span class="text-muted small ms-2">${esc(b.kode_barang)} — ${formatRupiah(b.harga)} — Stok: ${b.stok}</span>
+                        </div>
+                    `).join('');
+                    dropdown.classList.remove('d-none');
+
+                    dropdown.querySelectorAll('.item').forEach(el => {
+                        el.addEventListener('click', () => {
+                            pilihBarang(el.dataset.pk, el.dataset.kode, el.dataset.nama, el.dataset.harga, el.dataset.stok);
+                        });
+                    });
+                } catch { dropdown.classList.add('d-none'); }
+            }, 300);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.wrapper-cari')) dropdown.classList.add('d-none');
+        });
+
+        function pilihBarang(pk, kode, nama, harga, stok) {
+            document.getElementById('selectedIdBarang').value  = pk;
+            document.getElementById('inputCariBarang').value   = nama;
+            document.getElementById('displayKodeBarang').value = kode;
+            document.getElementById('displayHarga').value      = formatRupiah(harga);
+            document.getElementById('displayStok').value       = stok + ' Pcs';
+            document.getElementById('inputQty').max            = stok;
+            dropdown.classList.add('d-none');
+        }
+
+        // Tambah item ke keranjang
+        document.getElementById('formBelanja').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const idBarang = document.getElementById('selectedIdBarang').value;
+            const qty      = parseInt(document.getElementById('inputQty').value);
+
+            if (!idBarang) { showAlert('Pilih barang terlebih dahulu!', 'warning'); return; }
+            if (qty < 1)   { showAlert('Qty minimal 1.', 'warning'); return; }
+
+            const btn = document.getElementById('btnTambahItem');
+            btn.disabled = true;
+
+            try {
+                const res  = await fetch('transaksi.php?action=tambah_item', {
+                    method:      'POST',
+                    headers:     { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body:        JSON.stringify({ id_barang: parseInt(idBarang), qty })
+                });
+                const json = await res.json();
+
+                if (json.status === 'success') {
+                    resetFormBelanja();
+                    await muatKeranjang();
+                } else {
+                    showAlert(json.message, 'danger');
+                }
+            } catch {
+                showAlert('Gagal terhubung ke server.', 'danger');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        function resetFormBelanja() {
+            document.getElementById('selectedIdBarang').value  = '';
+            document.getElementById('inputCariBarang').value   = '';
+            document.getElementById('displayKodeBarang').value = '';
+            document.getElementById('displayHarga').value      = '';
+            document.getElementById('displayStok').value       = '';
+            document.getElementById('inputQty').value          = 1;
+        }
+
+        // Muat keranjang
+        async function muatKeranjang() {
+            try {
+                const res   = await fetch('transaksi.php?action=keranjang', { credentials: 'same-origin' });
+                const json  = await res.json();
+                const data  = json.data;
+                const items = data?.items ?? [];
+                const total = data?.total ?? 0;
+                idTrxAktif  = data?.id_transaksi ?? null;
+
+                const tbody = document.getElementById('tabelKeranjang');
+                if (items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-muted py-4">Keranjang kosong.</td></tr>';
+                    document.getElementById('uiTotalAkhir').textContent = 'Rp 0';
+                    document.getElementById('btnCheckout').disabled = true;
+                    return;
+                }
+
+                tbody.innerHTML = items.map((item, i) => `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td class="text-secondary fw-bold small">${esc(item.kode_barang ?? '-')}</td>
+                        <td class="text-start">${esc(item.nama_barang)}</td>
+                        <td>${formatRupiah(item.harga)}</td>
+                        <td>${item.qty}</td>
+                        <td class="fw-bold">${formatRupiah(item.subtotal)}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm"
+                                onclick="hapusItem(${item.id_detail})">✕</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                document.getElementById('uiTotalAkhir').textContent = formatRupiah(total);
+                document.getElementById('btnCheckout').disabled = false;
+            } catch {
+                showAlert('Gagal memuat keranjang.', 'danger');
+            }
+        }
+
+        // Hapus item
+        async function hapusItem(idDetail) {
+            if (!confirm('Hapus item ini dari keranjang?')) return;
+            try {
+                const res  = await fetch(`transaksi.php?action=hapus_item&id=${idDetail}`, {
+                    method: 'DELETE', credentials: 'same-origin'
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    await muatKeranjang();
+                } else {
+                    showAlert(json.message, 'danger');
+                }
+            } catch { showAlert('Gagal menghapus item.', 'danger'); }
+        }
+
+        // Checkout
+        document.getElementById('btnCheckout').addEventListener('click', async () => {
+            if (!idTrxAktif) { showAlert('Tidak ada transaksi aktif.', 'warning'); return; }
+            if (!confirm('Selesaikan transaksi dan cetak struk?')) return;
+
+            try {
+                const res  = await fetch('transaksi.php?action=checkout', {
+                    method:      'POST',
+                    headers:     { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body:        JSON.stringify({ id_transaksi: idTrxAktif })
+                });
+                const json = await res.json();
+
+                if (json.status === 'success') {
+                    tampilStruk(json.data);
+                    await muatKeranjang();
+                    await muatLaporan();
+                } else {
+                    showAlert(json.message, 'danger');
+                }
+            } catch { showAlert('Gagal melakukan checkout.', 'danger'); }
+        });
+
+        function tampilStruk(data) {
+            const now = new Date().toLocaleString('id-ID');
+            document.getElementById('isiStruk').innerHTML = `
+                <div style="font-size:0.8rem; text-align:left; line-height:1.8;">
+                    <div class="text-center fw-bold mb-2">TOKO BERKAH ABADI</div>
+                    <div class="text-center text-muted mb-2">--- STRUK PEMBELIAN ---</div>
+                    <div>No. Transaksi: <strong>#${data.id_transaksi}</strong></div>
+                    <div>Waktu: ${now}</div>
+                    <hr>
+                    <div class="fw-bold text-end fs-6">TOTAL: ${formatRupiah(data.total_bayar)}</div>
+                    <hr>
+                    <div class="text-center text-muted small mt-2">Terima kasih sudah berbelanja!</div>
+                </div>
+            `;
+            modalStruk.show();
+        }
+
+        // Laporan harian
+        async function muatLaporan() {
+            const tanggal = document.getElementById('inputTanggalLaporan').value;
+            try {
+                const res    = await fetch(`transaksi.php?action=laporan_harian&tanggal=${tanggal}`, { credentials: 'same-origin' });
+                const json   = await res.json();
+                const data   = json.data;
+                const rows   = data?.laporan ?? [];
+                const tbody  = document.getElementById('tabelLaporan');
+
+                if (rows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Belum ada transaksi.</td></tr>';
+                    document.getElementById('totalHarian').textContent = 'Rp 0';
+                    return;
+                }
+
+                tbody.innerHTML = rows.map((r, i) => `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td class="fw-bold">${esc(r.no_nota ?? '-')}</td>
+                        <td>${r.tanggal}</td>
+                        <td>${esc(r.kasir)}</td>
+                        <td>${r.jumlah_item} item</td>
+                        <td class="fw-bold">${formatRupiah(r.total_bayar)}</td>
+                    </tr>
+                `).join('');
+
+                document.getElementById('totalHarian').textContent = formatRupiah(data.total_harian);
+            } catch { /* silent */ }
+        }
+
+        function formatRupiah(n) { return 'Rp ' + parseInt(n).toLocaleString('id-ID'); }
+        function esc(str) { return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+        function showAlert(msg, type) {
+            const el = document.getElementById('alertGlobal');
+            el.className   = `alert alert-${type} mb-3`;
+            el.textContent = msg;
+            setTimeout(() => { el.className = 'alert d-none'; }, 4000);
+        }
+    </script>
 </body>
 </html>
