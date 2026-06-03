@@ -42,6 +42,8 @@
     </div>
 
 <script>
+    const BASE_URL = '/TA PBW/TUGAS-AKHIR-PEMROGRAMAN-WEB';
+
     document.getElementById('formRegistrasi').addEventListener('submit', async function(e) {
         e.preventDefault();
 
@@ -62,7 +64,7 @@
         btn.textContent = 'Mendaftarkan...';
 
         try {
-            const res  = await fetch('auth.php?action=registrasi', {
+            const res  = await fetch(`${BASE_URL}/auth.php?action=registrasi`, {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body:    JSON.stringify(data)
