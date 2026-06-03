@@ -17,37 +17,46 @@
                     <li class="nav-item"><a class="nav-link active" href="update_barang.html">📦 Update Barang</a></li>
                 </ul>
                 <div class="navbar-nav align-items-center">
-                    <a href="login.html" class="nav-link fw-bold text-light px-2">Login</a>
-                    <span class="text-muted mx-1">/</span>
-                    <a href="registrasi.html" class="nav-link fw-bold text-light px-2">Registrasi</a>
+                    <span id="infoUser" class="text-light me-3"></span>
+                    <a href="#" id="btnLogout" class="nav-link fw-bold text-warning px-2">Logout</a>
                 </div>
             </div>
         </div>
     </nav>
 
+    <div class="container-fluid px-4">
+        <div id="alertGlobal" class="alert d-none"></div>
+    </div>
+
     <div class="container-fluid px-4 mb-5">
         <div class="row">
             
             <div class="col-md-4 mb-4">
-                
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-primary text-white fw-bold py-3">Tambah Produk Baru</div>
                     <div class="card-body p-4">
-                        <form>
+                        <form id="formTambah">
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">ID Barang (Kode)</label><input type="text" class="form-control" name="id" required></div>
+                                <label class="form-label fw-semibold">ID Barang (Kode)</label>
+                                <input type="text" class="form-control" name="id" required>
+                            </div>
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Nama Barang</label><input type="text" class="form-control" name="nama" required></div>
+                                <label class="form-label fw-semibold">Nama Barang</label>
+                                <input type="text" class="form-control" name="nama" required>
+                            </div>
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Harga Jual (Rp)</label><input type="number" class="form-control" name="harga" required></div>
+                                <label class="form-label fw-semibold">Harga Jual (Rp)</label>
+                                <input type="number" class="form-control" name="harga" required>
+                            </div>
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Stok Jumlah Masuk</label><input type="number" class="form-control" name="stok" min="0" required></div>
-                            <button type="submit" class="btn btn-primary w-100 fw-bold py-2">Simpan ke Sistem Toko</button>
+                                <label class="form-label fw-semibold">Stok Jumlah Masuk</label>
+                                <input type="number" class="form-control" name="stok" min="0" required>
+                            </div>
+                            <button type="submit" id="btnTambah" class="btn btn-primary w-100 fw-bold py-2">Simpan ke Sistem Toko</button>
                         </form>
                     </div>
                 </div>
-
-                </div>
+            </div>
 
             <div class="col-md-8 p-4 rounded bg-white shadow-sm" style="border-left: 3px dashed #dee2e6; min-height: 75vh;">
                 <h4 class="fw-bold mb-4 text-dark ms-2">Daftar Produk</h4>
@@ -63,18 +72,8 @@
                                 <th>Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td class="fw-bold text-secondary">BRG001</td>
-                                <td class="fw-bold text-start">Sabun Mandi</td>
-                                <td class="fw-bold">Rp 4.500</td>
-                                <td class="fw-bold text-info">50 Pcs</td>
-                                <td>
-                                    <button class="btn btn-warning btn-sm fw-bold text-dark" onclick="uiBukaModalEdit('BRG001', 'Sabun Mandi', 4500, 50)">Edit</button> 
-                                    <a href="#" class="btn btn-danger btn-sm fw-bold">Hapus</a>
-                                </td>
-                            </tr>
+                        <tbody id="tabelBarang">
+                            <tr><td colspan="6" class="text-muted py-4">Data sedang dimuat via server...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -84,37 +83,39 @@
     </div>
 
     <div class="modal fade" id="modalEditMaster" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog"><div class="modal-content">
-            <div class="modal-header bg-warning">
-                <h5 class="modal-title fw-bold">Edit Detail Produk & Stok</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title fw-bold">Edit Detail Produk & Stok</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formEdit">
+                    <div class="modal-body">
+                        <input type="hidden" id="uiEditPK">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">ID Barang</label>
+                            <input type="text" class="form-control bg-light" id="uiEditID" name="id" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nama Barang</label>
+                            <input type="text" class="form-control" id="uiEditNama" name="nama" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Harga Baru (Rp)</label>
+                            <input type="number" class="form-control" id="uiEditHarga" name="harga" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-primary">Stok Gudang Sekarang</label>
+                            <input type="number" class="form-control" id="uiEditStok" name="stok" min="0" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-warning fw-bold text-dark">Simpan Perubahan</button>
+                    </div>
+                </form>  
             </div>
-            
-            <form>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">ID Barang</label>
-                        <input type="text" class="form-control bg-light" id="uiEditID" name="id" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Nama Barang</label>
-                        <input type="text" class="form-control" id="uiEditNama" name="nama" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Harga Baru (Rp)</label>
-                        <input type="number" class="form-control" id="uiEditHarga" name="harga" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold text-primary">Stok Gudang Sekarang</label>
-                        <input type="number" class="form-control" id="uiEditStok" name="stok" min="0" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-warning fw-bold text-dark">Simpan Perubahan</button>
-                </div>
-            </form>  
-        </div></div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -127,27 +128,23 @@
             await muatBarang();
         });
 
-        // Cek session
         async function cekSession() {
             try {
                 const res  = await fetch('auth.php?action=cek_session', { credentials: 'same-origin' });
                 const json = await res.json();
                 if (json.status === 'success') {
                     document.getElementById('infoUser').textContent = `👤 ${json.data.nama_user} (${json.data.nama_level})`;
-                } else {
-                    window.location.href = 'login.html';
-                }
+                } else { window.location.href = 'login.html'; }
             } catch { window.location.href = 'login.html'; }
         }
 
-        // Logout
         document.getElementById('btnLogout').addEventListener('click', async (e) => {
             e.preventDefault();
             await fetch('auth.php?action=logout', { credentials: 'same-origin' });
             window.location.href = 'login.html';
         });
 
-        // Muat tabel barang
+        // Sinkronisasi data kolom dari barang.php (id, kode_produk, nama_produk)
         async function muatBarang() {
             const tbody = document.getElementById('tabelBarang');
             try {
@@ -163,36 +160,36 @@
                 tbody.innerHTML = barangs.map((b, i) => `
                     <tr>
                         <td>${i + 1}</td>
-                        <td class="fw-bold text-secondary">${esc(b.kode_barang ?? '-')}</td>
-                        <td class="fw-bold text-start">${esc(b.nama_barang)}</td>
+                        <td class="fw-bold text-secondary">${esc(b.kode_produk ?? '-')}</td>
+                        <td class="fw-bold text-start">${esc(b.nama_produk ?? '')}</td>
                         <td class="fw-bold">${formatRupiah(b.harga)}</td>
                         <td class="fw-bold ${b.stok < 5 ? 'text-danger' : 'text-info'}">${b.stok} Pcs</td>
                         <td>
                             <button class="btn btn-warning btn-sm fw-bold text-dark me-1"
-                                onclick="bukaModalEdit(${b.id_barang}, '${esc(b.kode_barang)}', '${esc(b.nama_barang)}', ${b.harga}, ${b.stok})">
+                                onclick="bukaModalEdit(${b.id}, '${esc(b.kode_produk)}', '${esc(b.nama_produk)}', ${b.harga}, ${b.stok})">
                                 Edit
                             </button>
                             <button class="btn btn-danger btn-sm fw-bold"
-                                onclick="hapusBarang(${b.id_barang}, '${esc(b.nama_barang)}')">
+                                onclick="hapusBarang(${b.id}, '${esc(b.nama_produk)}')">
                                 Hapus
                             </button>
                         </td>
                     </tr>
                 `).join('');
             } catch {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-danger">Gagal memuat data.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-danger">Gagal memuat data dari database.</td></tr>';
             }
         }
 
-        // Tambah barang
+        // pembacaan isi input form via querySelector (Mencegah bug this.id)
         document.getElementById('formTambah').addEventListener('submit', async function(e) {
             e.preventDefault();
             const btn  = document.getElementById('btnTambah');
             const data = {
-                id:    this.id.value.trim(),
-                nama:  this.nama.value.trim(),
-                harga: parseInt(this.harga.value),
-                stok:  parseInt(this.stok.value)
+                id:    this.querySelector('[name="id"]').value.trim(),
+                nama:  this.querySelector('[name="nama"]').value.trim(),
+                harga: parseInt(this.querySelector('[name="harga"]').value),
+                stok:  parseInt(this.querySelector('[name="stok"]').value)
             };
 
             btn.disabled = true;
@@ -222,7 +219,6 @@
             }
         });
 
-        // Buka modal edit
         function bukaModalEdit(pk, kode, nama, harga, stok) {
             document.getElementById('uiEditPK').value    = pk;
             document.getElementById('uiEditID').value    = kode;
@@ -232,7 +228,6 @@
             modalEdit.show();
         }
 
-        // Simpan edit
         document.getElementById('formEdit').addEventListener('submit', async function(e) {
             e.preventDefault();
             const pk   = document.getElementById('uiEditPK').value;
@@ -255,32 +250,20 @@
                     modalEdit.hide();
                     showAlert('Barang berhasil diperbarui!', 'success');
                     await muatBarang();
-                } else {
-                    showAlert(json.message, 'danger');
-                }
-            } catch {
-                showAlert('Gagal terhubung ke server.', 'danger');
-            }
+                } else { showAlert(json.message, 'danger'); }
+            } catch { showAlert('Gagal terhubung ke server.', 'danger'); }
         });
 
-        // Hapus barang
         async function hapusBarang(id, nama) {
             if (!confirm(`Yakin ingin menghapus barang "${nama}"?`)) return;
             try {
-                const res  = await fetch(`barang.php?id=${id}`, {
-                    method:      'DELETE',
-                    credentials: 'same-origin'
-                });
+                const res  = await fetch(`barang.php?id=${id}`, { method: 'DELETE', credentials: 'same-origin' });
                 const json = await res.json();
                 if (json.status === 'success') {
                     showAlert('Barang berhasil dihapus.', 'success');
                     await muatBarang();
-                } else {
-                    showAlert(json.message, 'danger');
-                }
-            } catch {
-                showAlert('Gagal terhubung ke server.', 'danger');
-            }
+                } else { showAlert(json.message, 'danger'); }
+            } catch { showAlert('Gagal terhubung ke server.', 'danger'); }
         }
 
         function formatRupiah(n) { return 'Rp ' + parseInt(n).toLocaleString('id-ID'); }
