@@ -5,20 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Kasir - Transaksi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Desain responsif pembatas panel */
+        @media (min-width: 768px) { .panel-kanan { border-left: 3px dashed #dee2e6; } }
+        @media (max-width: 767px) {
+            .panel-kanan { border-top: 3px dashed #dee2e6; margin-top: 1.5rem; padding-top: 1.5rem !important; }
+        }
+    </style>
 </head>
 <body class="bg-light">
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm mb-4">
         <div class="container-fluid px-4">
-            <a class="navbar-brand fw-bold" href="index.html">Sistem Kasir Toko Berkah Abadi</a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
+            <a class="navbar-brand fw-bold" href="index.html">Toko Berkah Abadi</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item"><a class="nav-link active" href="transaksi.html">🛒 Transaksi</a></li>
                     <li class="nav-item"><a class="nav-link" href="update_barang.html">📦 Update Barang</a></li>
                 </ul>
-                <div class="navbar-nav align-items-center">
-                    <span id="infoUser" class="text-light me-3"></span>
-                    <a href="#" id="btnLogout" class="nav-link fw-bold text-warning px-2">Logout</a>
+                <div class="navbar-nav align-items-lg-center">
+                    <span id="infoUser" class="text-light me-lg-3 mb-2 mb-lg-0 d-block"></span>
+                    <a href="#" id="btnLogout" class="nav-link fw-bold text-warning px-0 px-lg-2">Logout</a>
                 </div>
             </div>
         </div>
@@ -34,7 +44,7 @@
             <div class="col-md-4 mb-4">
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-primary text-white fw-bold py-3">Masukkan Barang Belanjaan</div>
-                    <div class="card-body p-4">
+                    <div class="card-body p-3 p-md-4">
                         <form id="formBelanja">
                             <div class="mb-4 position-relative wrapper-cari">
                                 <label class="form-label fw-semibold">Cari Barang</label>
@@ -44,17 +54,19 @@
                             
                             <input type="hidden" id="selectedIdBarang">
 
-                            <div class="mb-4">
+                            <div class="mb-3">
                                 <label class="form-label fw-semibold">ID Barang (Kode)</label>
                                 <input type="text" class="form-control bg-light" id="displayKodeBarang" readonly>
                             </div>
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold">Harga (Rp)</label>
-                                <input type="text" class="form-control bg-light" id="displayHarga" readonly>
-                            </div>
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold text-danger">Stok Gudang</label>
-                                <input type="text" class="form-control bg-warning bg-opacity-10 fw-bold" id="displayStok" readonly>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold">Harga (Rp)</label>
+                                    <input type="text" class="form-control bg-light" id="displayHarga" readonly>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold text-danger">Stok</label>
+                                    <input type="text" class="form-control bg-warning bg-opacity-10 fw-bold" id="displayStok" readonly>
+                                </div>
                             </div>
                             <div class="mb-4">
                                 <label class="form-label fw-semibold">Jumlah / Qty</label>
@@ -66,63 +78,65 @@
                 </div>
             </div>
 
-            <div class="col-md-8 p-4 rounded bg-white shadow-sm" style="border-left: 3px dashed #dee2e6;">
-                <h4 class="fw-bold mb-3 text-dark">Subtotal Belanjaan</h4>
-                <div class="table-responsive mb-4">
-                    <table class="table table-hover align-middle text-center w-100">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>No</th>
-                                <th>ID</th>
-                                <th>Nama Barang</th>
-                                <th>Harga</th>
-                                <th>Qty</th>
-                                <th>Subtotal</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabelKeranjang">
-                            <tr><td colspan="7" class="text-muted">Data keranjang akan dimuat via server...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="mb-3 shadow-sm text-end p-3 rounded fw-bold" style="background-color: #1e2229; color: #ffc107; font-size: 2.2rem; font-family: 'Courier New';">
-                    TOTAL BELANJA: <span id="uiTotalAkhir">Rp 0</span>
-                </div>
-                
-                <button id="btnCheckout" class="btn btn-primary btn-lg w-100 fw-bold shadow mb-5" type="button" disabled>SELESAI & CETAK STRUK</button>
-
-                <div class="pt-4 border-top border-2">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="fw-bold m-0 text-dark">📋 Laporan Penjualan Harian</h4>
-                        <input type="date" id="inputTanggalLaporan" class="form-control w-auto">
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped align-middle text-center bg-white">
-                            <thead class="table-secondary">
+            <div class="col-md-8 p-0 p-md-4 rounded bg-white shadow-sm panel-kanan">
+                <div class="p-3 p-md-0">
+                    <h4 class="fw-bold mb-3 text-dark">Subtotal Belanjaan</h4>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-hover align-middle text-center w-100">
+                            <thead class="table-dark">
                                 <tr>
                                     <th>No</th>
-                                    <th>No. Nota</th>
-                                    <th>Tanggal</th>
-                                    <th>Kasir</th>
-                                    <th>Item Terjual</th>
-                                    <th>Total</th>
+                                    <th>ID</th>
+                                    <th class="text-start">Nama Barang</th>
+                                    <th>Harga</th>
+                                    <th>Qty</th>
+                                    <th>Subtotal</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="tabelLaporan">
-                                <tr><td colspan="6" class="text-muted">Data laporan akan dimuat via server...</td></tr>
+                            <tbody id="tabelKeranjang">
+                                <tr><td colspan="7" class="text-muted">Data keranjang akan dimuat via server...</td></tr>
                             </tbody>
-                            <tfoot class="table-dark">
-                                <tr>
-                                    <td colspan="5" class="text-end">TOTAL PENJUALAN HARI INI:</td>
-                                    <td id="totalHarian" class="fw-bold fs-5 text-warning">Rp 0</td>
-                                </tr>
-                            </tfoot>
                         </table>
                     </div>
-                </div>
+                    
+                    <div class="mb-3 shadow-sm text-center text-md-end p-3 rounded fw-bold" style="background-color: #1e2229; color: #ffc107; font-size: 2.2rem; font-family: 'Courier New';">
+                        <span class="d-block d-md-inline mb-2 mb-md-0">TOTAL:</span> 
+                        <span id="uiTotalAkhir">Rp 0</span>
+                    </div>
+                    
+                    <button id="btnCheckout" class="btn btn-primary btn-lg w-100 fw-bold shadow mb-5" type="button" disabled>SELESAI & CETAK STRUK</button>
 
+                    <div class="pt-4 border-top border-2">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+                            <h4 class="fw-bold m-0 text-dark fs-5 fs-md-4">Laporan Penjualan Harian</h4>
+                            <input type="date" id="inputTanggalLaporan" class="form-control w-auto">
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped align-middle text-center bg-white">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th>No</th>
+                                        <th>No. Nota</th>
+                                        <th>Tanggal</th>
+                                        <th>Kasir</th>
+                                        <th>Item Terjual</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelLaporan">
+                                    <tr><td colspan="6" class="text-muted">Data laporan akan dimuat via server...</td></tr>
+                                </tbody>
+                                <tfoot class="table-dark">
+                                    <tr>
+                                        <td colspan="5" class="text-end">TOTAL HARI INI:</td>
+                                        <td id="totalHarian" class="fw-bold fs-6 fs-md-5 text-warning">Rp 0</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -135,7 +149,8 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="isiStruk"></div>
-                <div class="modal-footer">
+                <div class="modal-footer flex-column gap-2">
+                    <button type="button" class="btn btn-warning w-100 fw-bold" id="btnCetakThermal">Cetak Struk</button>
                     <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">Tutup</button>
                 </div>
             </div>
@@ -145,55 +160,65 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let idTrxAktif = null;
+        let keranjangItemsCache = []; 
+        let dataTransaksiCache  = null; 
         let modalStruk;
         let debounceTimer;
 
         document.addEventListener('DOMContentLoaded', async () => {
             modalStruk = new bootstrap.Modal(document.getElementById('modalStruk'));
-            document.getElementById('inputTanggalLaporan').value = new Date().toISOString().split('T')[0];
+            
+            const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+            const localISODate = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+            document.getElementById('inputTanggalLaporan').value = localISODate;
+
             await cekSession();
             await muatKeranjang();
             await muatLaporan();
             document.getElementById('inputTanggalLaporan').addEventListener('change', muatLaporan);
         });
 
-        // Cek session
         async function cekSession() {
             try {
                 const res  = await fetch('auth.php?action=cek_session', { credentials: 'same-origin' });
                 const json = await res.json();
                 if (json.status === 'success') {
                     document.getElementById('infoUser').textContent = `👤 ${json.data.nama_user} (${json.data.nama_level})`;
-                } else {
-                    window.location.href = 'login.html';
-                }
+                } else { window.location.href = 'login.html'; }
             } catch { window.location.href = 'login.html'; }
         }
 
-        // Logout
         document.getElementById('btnLogout').addEventListener('click', async (e) => {
             e.preventDefault();
             await fetch('auth.php?action=logout', { credentials: 'same-origin' });
             window.location.href = 'login.html';
         });
 
-        // Autocomplete cari barang
         const inputCari = document.getElementById('inputCariBarang');
         const dropdown  = document.getElementById('dropdownBarang');
 
-        inputCari.addEventListener('input', () => {
+        inputCari.addEventListener('input', (e) => {
             clearTimeout(debounceTimer);
-            const q = inputCari.value.trim();
-            if (q.length < 1) { dropdown.classList.add('d-none'); return; }
+            const q = e.target.value.trim();
+            
+            if (q.length < 1) { 
+                dropdown.innerHTML = '';
+                dropdown.classList.add('d-none'); 
+                return; 
+            }
 
             debounceTimer = setTimeout(async () => {
+                if (inputCari.value.trim().length < 1) return;
+
                 try {
                     const res  = await fetch(`barang.php?cari=${encodeURIComponent(q)}`, { credentials: 'same-origin' });
+                    if (inputCari.value.trim() !== q) return;
+
                     const json = await res.json();
                     const list = json.data ?? [];
 
                     if (list.length === 0) { 
-                        dropdown.innerHTML = '<div class="p-3 text-muted small text-center">Barang tidak ditemukan / Stok habis</div>';
+                        dropdown.innerHTML = '<div class="p-3 text-muted small text-center">Barang tidak ditemukan</div>';
                         dropdown.classList.remove('d-none');
                         return; 
                     }
@@ -204,7 +229,7 @@
                              data-nama="${esc(b.nama_produk)}" data-harga="${b.harga}" data-stok="${b.stok}"
                              onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='#fff'">
                             <strong class="text-primary">${esc(b.nama_produk)}</strong>
-                            <div class="text-muted small">${esc(b.kode_produk)} — ${formatRupiah(b.harga)} — Stok: ${b.stok} Pcs</div>
+                            <div class="text-muted small">${esc(b.kode_produk)} — ${formatRupiah(b.harga)} — Stok: ${b.stok}</div>
                         </div>
                     `).join('');
                     dropdown.classList.remove('d-none');
@@ -232,13 +257,12 @@
             dropdown.classList.add('d-none');
         }
 
-        // Tambah item ke keranjang
         document.getElementById('formBelanja').addEventListener('submit', async function(e) {
             e.preventDefault();
             const idBarang = document.getElementById('selectedIdBarang').value;
             const qty      = parseInt(document.getElementById('inputQty').value);
 
-            if (!idBarang) { showAlert('Pilih barang terlebih dahulu dari dropdown!', 'warning'); return; }
+            if (!idBarang) { showAlert('Pilih barang terlebih dahulu!', 'warning'); return; }
             if (qty < 1)   { showAlert('Qty minimal 1.', 'warning'); return; }
 
             const btn = document.getElementById('btnTambahItem');
@@ -256,14 +280,9 @@
                 if (json.status === 'success') {
                     resetFormBelanja();
                     await muatKeranjang();
-                } else {
-                    showAlert(json.message, 'danger');
-                }
-            } catch {
-                showAlert('Gagal terhubung ke server.', 'danger');
-            } finally {
-                btn.disabled = false;
-            }
+                } else { showAlert(json.message, 'danger'); }
+            } catch { showAlert('Gagal terhubung ke server.', 'danger'); }
+            finally { btn.disabled = false; }
         });
 
         function resetFormBelanja() {
@@ -275,15 +294,15 @@
             document.getElementById('inputQty').value          = 1;
         }
 
-        // Muat keranjang
         async function muatKeranjang() {
             try {
                 const res   = await fetch('transaksi.php?action=keranjang', { credentials: 'same-origin' });
                 const json  = await res.json();
                 const data  = json.data;
                 const items = data?.items ?? [];
-                const total = data?.total ?? 0;
-                idTrxAktif  = data?.id_transaksi ?? null;
+                
+                keranjangItemsCache = items; 
+                idTrxAktif = data?.id_transaksi ?? null;
 
                 const tbody = document.getElementById('tabelKeranjang');
                 if (items.length === 0) {
@@ -305,41 +324,33 @@
                             <td>${formatRupiah(item.harga)}</td>
                             <td>${item.qty}</td>
                             <td class="fw-bold">${formatRupiah(item.subtotal)}</td>
-                            <td>
-                                <button class="btn btn-danger btn-sm" onclick="hapusItem(${idDetail})">✕</button>
-                            </td>
+                            <td><button class="btn btn-danger btn-sm" onclick="hapusItem(${idDetail})">✕</button></td>
                         </tr>
                     `;
                 }).join('');
 
-                document.getElementById('uiTotalAkhir').textContent = formatRupiah(total);
+                document.getElementById('uiTotalAkhir').textContent = formatRupiah(data.total);
                 document.getElementById('btnCheckout').disabled = false;
-            } catch {
-                showAlert('Gagal memuat keranjang.', 'danger');
-            }
+            } catch { showAlert('Gagal memuat keranjang.', 'danger'); }
         }
 
-        // Hapus item
         async function hapusItem(idDetail) {
-            if (!confirm('Hapus item ini dari keranjang?')) return;
+            if (!confirm('Hapus item ini?')) return;
             try {
-                const res  = await fetch(`transaksi.php?action=hapus_item&id=${idDetail}`, {
-                    method: 'DELETE', credentials: 'same-origin'
-                });
+                const res = await fetch(`transaksi.php?action=hapus_item&id=${idDetail}`, { method: 'DELETE', credentials: 'same-origin' });
                 const json = await res.json();
-                if (json.status === 'success') {
-                    await muatKeranjang();
-                } else {
-                    showAlert(json.message, 'danger');
-                }
+                if (json.status === 'success') await muatKeranjang();
+                else showAlert(json.message, 'danger');
             } catch { showAlert('Gagal menghapus item.', 'danger'); }
         }
 
         // Checkout
         document.getElementById('btnCheckout').addEventListener('click', async () => {
             if (!confirm('Selesaikan transaksi dan cetak struk?')) return;
-
             try {
+                // Kunci/Clone data item belanja dari cache sebelum dihapus oleh muatKeranjang()
+                const barangTerbeli = JSON.parse(JSON.stringify(keranjangItemsCache));
+
                 const res  = await fetch('transaksi.php?action=checkout', {
                     method:      'POST',
                     headers:     { 'Content-Type': 'application/json' },
@@ -349,12 +360,14 @@
                 const json = await res.json();
 
                 if (json.status === 'success') {
+                    // Masukkan kembali item terbeli ke cache agar bisa diakses oleh fungsi cetak thermal
+                    dataTransaksiCache = json.data;
+                    dataTransaksiCache.items = barangTerbeli; 
+
                     tampilStruk(json.data);
                     await muatKeranjang();
                     await muatLaporan();
-                } else {
-                    showAlert(json.message, 'danger');
-                }
+                } else { showAlert(json.message, 'danger'); }
             } catch { showAlert('Gagal melakukan checkout.', 'danger'); }
         });
 
@@ -364,7 +377,7 @@
                 <div style="font-size:0.85rem; text-align:left; line-height:1.8;">
                     <div class="text-center fw-bold mb-2">TOKO BERKAH ABADI</div>
                     <div class="text-center text-muted mb-2">--- STRUK PEMBELIAN ---</div>
-                    <div>No. Transaksi: <strong>#${data.id_transaksi}</strong></div>
+                    <div>No. Nota: <strong>#${data.id_transaksi}</strong></div>
                     <div>Waktu: ${now}</div>
                     <hr style="border-top: 1px dashed #000;">
                     <div class="fw-bold text-end fs-6">TOTAL: ${formatRupiah(data.total_bayar)}</div>
@@ -374,6 +387,84 @@
             `;
             modalStruk.show();
         }
+
+        // Cetak Struk
+        document.getElementById('btnCetakThermal').addEventListener('click', () => {
+            if (!dataTransaksiCache || !dataTransaksiCache.items) {
+                alert("Data struk kosong atau sudah kedaluwarsa. Silakan lakukan transaksi baru.");
+                return;
+            }
+            
+            const now = new Date().toLocaleString('id-ID');
+            let itemHTML = '';
+            
+            dataTransaksiCache.items.forEach(item => {
+                const nama = item.nama_produk ?? item.nama_barang ?? 'Item';
+                itemHTML += `
+                    <tr><td colspan="3" style="padding-top:4px; font-weight:bold;">${nama}</td></tr>
+                    <tr>
+                        <td style="width:15%;">${item.qty}x</td>
+                        <td style="width:45%; text-align:right;">${formatRupiah(item.harga)}</td>
+                        <td style="width:40%; text-align:right;">${formatRupiah(item.subtotal)}</td>
+                    </tr>
+                `;
+            });
+
+            const printWindow = window.open('', '_blank', 'width=400,height=600');
+            const thermalTemplate = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Print Struk Toko Berkah Abadi</title>
+                    <style>
+                        @page { margin: 0; size: 58mm auto; }
+                        body {
+                            font-family: 'Courier New', Courier, monospace;
+                            font-size: 11px;
+                            width: 54mm;
+                            margin: 0 auto;
+                            padding: 2mm 1mm;
+                            color: #000;
+                            line-height: 1.3;
+                        }
+                        .text-center { text-align: center; }
+                        .text-right { text-align: right; }
+                        .bold { font-weight: bold; }
+                        .dashed-line { border-top: 1px dashed #000; margin: 6px 0; }
+                        table { width: 100%; border-collapse: collapse; }
+                        td { vertical-align: top; font-size: 11px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="text-center bold" style="font-size: 13px;">TOKO BERKAH ABADI</div>
+                    <div class="text-center" style="font-size: 9px;">Solusi Belanja Hemat & Lengkap</div>
+                    <div class="dashed-line"></div>
+                    <div>Nota : #${dataTransaksiCache.id_transaksi}</div>
+                    <div>Waktu: ${now}</div>
+                    <div class="dashed-line"></div>
+                    
+                    <table>
+                        ${itemHTML}
+                    </table>
+                    
+                    <div class="dashed-line"></div>
+                    <div class="text-right bold" style="font-size: 12px;">TOTAL: ${formatRupiah(dataTransaksiCache.total_bayar)}</div>
+                    <div class="dashed-line"></div>
+                    <div class="text-center" style="font-size: 9px; margin-top:8px;">Terima kasih atas kunjungan Anda</div>
+                    
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                            setTimeout(() => { window.close(); }, 300);
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `;
+            
+            printWindow.document.write(thermalTemplate);
+            printWindow.document.close();
+        });
 
         // Laporan harian
         async function muatLaporan() {
