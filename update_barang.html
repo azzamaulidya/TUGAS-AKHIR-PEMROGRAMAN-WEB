@@ -35,22 +35,27 @@
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-primary text-white fw-bold py-3">Tambah Produk Baru</div>
                     <div class="card-body p-4">
-                        <form id="formTambah">
+                        <form id="formTambah" enctype="multipart/form-data">
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">ID Barang (Kode)</label>
-                                <input type="text" class="form-control" name="id" required>
+                                <input type="text" class="form-control" name="id" placeholder="Contoh: BRG001" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Nama Barang</label>
-                                <input type="text" class="form-control" name="nama" required>
+                                <input type="text" class="form-control" name="nama" placeholder="Nama produk..." required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Harga Jual (Rp)</label>
-                                <input type="number" class="form-control" name="harga" required>
+                                <input type="number" class="form-control" name="harga" placeholder="Harga satuan..." required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Stok Jumlah Masuk</label>
-                                <input type="number" class="form-control" name="stok" min="0" required>
+                                <input type="number" class="form-control" name="stok" min="0" placeholder="Jumlah stok..." required>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Gambar/Foto Produk</label>
+                                <input type="file" class="form-control" name="gambar" accept="image/*">
+                                <small class="text-muted d-block mt-1">Format: JPG, JPEG, PNG. Maksimal 2MB.</small>
                             </div>
                             <button type="submit" id="btnTambah" class="btn btn-primary w-100 fw-bold py-2">Simpan ke Sistem Toko</button>
                         </form>
@@ -66,14 +71,14 @@
                             <tr>
                                 <th>No</th>
                                 <th>ID Barang</th>
-                                <th>Nama Barang</th>
+                                <th>Gambar</th> <th>Nama Barang</th>
                                 <th>Harga Barang</th>
                                 <th>Stok Barang</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="tabelBarang">
-                            <tr><td colspan="6" class="text-muted py-4">Data sedang dimuat via server...</td></tr>
+                            <tr><td colspan="7" class="text-muted py-4">Data sedang dimuat via server...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -86,10 +91,10 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-warning">
-                    <h5 class="modal-title fw-bold">Edit Detail Produk & Stok</h5>
+                    <h5 class="modal-title fw-bold text-dark">Edit Detail Produk & Stok</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="formEdit">
+                <form id="formEdit" enctype="multipart/form-data">
                     <div class="modal-body">
                         <input type="hidden" id="uiEditPK">
                         <div class="mb-3">
@@ -107,6 +112,10 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold text-primary">Stok Gudang Sekarang</label>
                             <input type="number" class="form-control" id="uiEditStok" name="stok" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Ganti Gambar Produk <span class="text-muted small">(Kosongkan jika tidak ingin diubah)</span></label>
+                            <input type="file" class="form-control" id="uiEditGambar" name="gambar" accept="image/*">
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -144,7 +153,7 @@
             window.location.href = 'login.html';
         });
 
-        // Sinkronisasi data kolom dari barang.php (id, kode_produk, nama_produk)
+        // FUNGSI MEMUAT BARANG KE TABEL
         async function muatBarang() {
             const tbody = document.getElementById('tabelBarang');
             try {
@@ -153,106 +162,118 @@
                 const barangs = json.data ?? [];
 
                 if (barangs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-muted py-4">Belum ada data barang.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-muted py-4">Belum ada data barang.</td></tr>';
                     return;
                 }
 
-                tbody.innerHTML = barangs.map((b, i) => `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td class="fw-bold text-secondary">${esc(b.kode_produk ?? '-')}</td>
-                        <td class="fw-bold text-start">${esc(b.nama_produk ?? '')}</td>
-                        <td class="fw-bold">${formatRupiah(b.harga)}</td>
-                        <td class="fw-bold ${b.stok < 5 ? 'text-danger' : 'text-info'}">${b.stok} Pcs</td>
-                        <td>
-                            <button class="btn btn-warning btn-sm fw-bold text-dark me-1"
-                                onclick="bukaModalEdit(${b.id}, '${esc(b.kode_produk)}', '${esc(b.nama_produk)}', ${b.harga}, ${b.stok})">
-                                Edit
-                            </button>
-                            <button class="btn btn-danger btn-sm fw-bold"
-                                onclick="hapusBarang(${b.id}, '${esc(b.nama_produk)}')">
-                                Hapus
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
+                tbody.innerHTML = barangs.map((b, i) => {
+                    // Jika di database data gambar kosong/null, gunakan placeholder nama produk
+                    const imgUrl = b.gambar ? b.gambar : `https://placehold.co/50x50/f8f9fa/007bff?text=${encodeURIComponent(b.nama_produk.substring(0,3))}`;
+                    
+                    return `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td class="fw-bold text-secondary">${esc(b.kode_produk ?? '-')}</td>
+                            <td>
+                                <img src="${imgUrl}" width="50" height="50" class="rounded border shadow-sm" style="object-fit: cover;" onerror="this.src='https://placehold.co/50x50?text=Error'">
+                            </td>
+                            <td class="fw-bold text-start">${esc(b.nama_produk ?? '')}</td>
+                            <td class="fw-bold">${formatRupiah(b.harga)}</td>
+                            <td class="fw-bold ${b.stok < 5 ? 'text-danger' : 'text-info'}">${b.stok} Pcs</td>
+                            <td>
+                                <button class="btn btn-warning btn-sm fw-bold text-dark me-1"
+                                    onclick="bukaModalEdit(${b.id}, '${esc(b.kode_produk)}', '${esc(b.nama_produk)}', ${b.harga}, ${b.stok})">
+                                    Edit
+                                </button>
+                                <button class="btn btn-danger btn-sm fw-bold"
+                                    onclick="hapusBarang(${b.id}, '${esc(b.nama_produk)}')">
+                                    Hapus
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
             } catch {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-danger">Gagal memuat data dari database.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-danger">Gagal memuat data dari database.</td></tr>';
             }
         }
 
-        // pembacaan isi input form via querySelector (Mencegah bug this.id)
-        document.getElementById('formTambah').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const btn  = document.getElementById('btnTambah');
-            const data = {
-                id:    this.querySelector('[name="id"]').value.trim(),
-                nama:  this.querySelector('[name="nama"]').value.trim(),
-                harga: parseInt(this.querySelector('[name="harga"]').value),
-                stok:  parseInt(this.querySelector('[name="stok"]').value)
-            };
+        // FUNGSI SUBMIT FORM TAMBAH BARANG 
+document.getElementById('formTambah').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnTambah');
+    
+    // Menggunakan FormData agar file gambar otomatis ikut terkirim
+    const formData = new FormData(this);
 
-            btn.disabled = true;
-            btn.textContent = 'Menyimpan...';
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan Berkas...';
 
-            try {
-                const res  = await fetch('barang.php', {
-                    method:      'POST',
-                    headers:     { 'Content-Type': 'application/json' },
-                    credentials: 'same-origin',
-                    body:        JSON.stringify(data)
-                });
-                const json = await res.json();
-
-                if (json.status === 'success') {
-                    showAlert('Barang berhasil ditambahkan!', 'success');
-                    this.reset();
-                    await muatBarang();
-                } else {
-                    showAlert(json.message, 'danger');
-                }
-            } catch {
-                showAlert('Gagal terhubung ke server.', 'danger');
-            } finally {
-                btn.disabled    = false;
-                btn.textContent = 'Simpan ke Sistem Toko';
-            }
+    try {
+        const res = await fetch('barang.php', {
+            method:      'POST',
+            credentials: 'same-origin',
+            body:        formData // Kirim langsung objek formData
         });
+        const json = await res.json();
 
-        function bukaModalEdit(pk, kode, nama, harga, stok) {
-            document.getElementById('uiEditPK').value    = pk;
-            document.getElementById('uiEditID').value    = kode;
-            document.getElementById('uiEditNama').value  = nama;
-            document.getElementById('uiEditHarga').value = harga;
-            document.getElementById('uiEditStok').value  = stok;
-            modalEdit.show();
+        if (json.status === 'success') {
+            showAlert('Barang dan gambar berhasil disimpan!', 'success');
+            this.reset();
+            await muatBarang();
+        } else {
+            showAlert(json.message, 'danger');
         }
+    } catch {
+        showAlert('Gagal terhubung ke server database.', 'danger');
+    } finally {
+        btn.disabled    = false;
+        btn.textContent = 'Simpan ke Sistem Toko';
+    }
+});
 
-        document.getElementById('formEdit').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const pk   = document.getElementById('uiEditPK').value;
-            const data = {
-                nama:  document.getElementById('uiEditNama').value.trim(),
-                harga: parseInt(document.getElementById('uiEditHarga').value),
-                stok:  parseInt(document.getElementById('uiEditStok').value)
-            };
+// FUNGSI SUBMIT FORM EDIT BARANG
+function bukaModalEdit(pk, kode, nama, harga, stok) {
+    document.getElementById('uiEditPK').value     = pk;
+    document.getElementById('uiEditID').value     = kode;
+    document.getElementById('uiEditNama').value   = nama;
+    document.getElementById('uiEditHarga').value  = harga;
+    document.getElementById('uiEditStok').value   = stok;
+    
+    // Reset input gambar agar tidak membawa file dari editan sebelumnya
+    const inputGambar = document.getElementById('uiEditGambar');
+    if (inputGambar) inputGambar.value = ''; 
+    
+    modalEdit.show();
+}
 
-            try {
-                const res  = await fetch(`barang.php?id=${pk}`, {
-                    method:      'PUT',
-                    headers:     { 'Content-Type': 'application/json' },
-                    credentials: 'same-origin',
-                    body:        JSON.stringify(data)
-                });
-                const json = await res.json();
+document.getElementById('formEdit').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const pk = document.getElementById('uiEditPK').value;
+    // Menggunakan FormData agar text dan file gambar biner terbungkus menjadi satu
+    const formData = new FormData(this); 
 
-                if (json.status === 'success') {
-                    modalEdit.hide();
-                    showAlert('Barang berhasil diperbarui!', 'success');
-                    await muatBarang();
-                } else { showAlert(json.message, 'danger'); }
-            } catch { showAlert('Gagal terhubung ke server.', 'danger'); }
+    try {
+        const res = await fetch(`barang.php?id=${pk}&action=update`, {
+            method:      'POST', 
+            credentials: 'same-origin',
+            body:        formData 
         });
+        
+        const json = await res.json();
+
+        if (json.status === 'success') {
+            modalEdit.hide();
+            showAlert('Detail produk dan gambar berhasil diperbarui!', 'success');
+            await muatBarang(); 
+            } else { 
+            showAlert(json.message, 'danger'); 
+            }
+        } catch (err) { 
+            showAlert('Gagal terhubung ke server backend.', 'danger'); 
+        }
+    });
 
         async function hapusBarang(id, nama) {
             if (!confirm(`Yakin ingin menghapus barang "${nama}"?`)) return;
@@ -268,6 +289,7 @@
 
         function formatRupiah(n) { return 'Rp ' + parseInt(n).toLocaleString('id-ID'); }
         function esc(str) { return String(str ?? '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+        
         function showAlert(msg, type) {
             const el = document.getElementById('alertGlobal');
             el.className   = `alert alert-${type} mb-3`;
