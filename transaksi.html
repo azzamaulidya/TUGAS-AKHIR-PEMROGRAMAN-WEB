@@ -6,8 +6,23 @@
     <title>Sistem Kasir - Transaksi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        
         #strukCetak { display: none; }
+
+        /* Custom Scrollbar untuk Grid Produk agar rapi */
+        #gridProduk::-webkit-scrollbar {
+            width: 6px;
+        }
+        #gridProduk::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        #gridProduk::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        #gridProduk::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
 
         @media print {
             body * { visibility: hidden; }
@@ -54,42 +69,22 @@
     <div class="container-fluid px-4">
         <div class="row">
             
-            <div class="col-md-4 mb-4">
+            <div class="col-md-6 mb-4">
                 <div class="card shadow-sm border-0">
-                    <div class="card-header bg-primary text-white fw-bold py-3">Masukkan Barang Belanjaan</div>
-                    <div class="card-body p-4">
-                        <form id="formBelanja">
-                            <div class="mb-4 position-relative wrapper-cari">
-                                <label class="form-label fw-semibold">Cari Barang</label>
-                                <input type="text" class="form-control form-control-lg border-primary" id="inputCariBarang" placeholder="Ketik nama barang..." autocomplete="off" required autofocus>
-                                <div id="dropdownBarang" class="bg-white border rounded w-100 d-none position-absolute shadow-lg" style="max-height: 250px; overflow-y: auto; z-index: 1050;"></div>
-                            </div>
-                            
-                            <input type="hidden" id="selectedIdBarang">
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">ID Barang (Kode)</label>
-                                <input type="text" class="form-control bg-light" id="displayKodeBarang" readonly>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Harga Satuan (Rp)</label>
-                                <input type="text" class="form-control bg-light" id="displayHarga" readonly>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold text-danger">Stok Gudang</label>
-                                <input type="text" class="form-control bg-warning bg-opacity-10 fw-bold" id="displayStok" readonly>
-                            </div>
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold">Jumlah / Qty</label>
-                                <input type="number" class="form-control form-control-lg" id="inputQty" value="1" min="1" required>
-                            </div>
-                            <button type="submit" id="btnTambahItem" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm">Kirim ke Subtotal ➔</button>
-                        </form>
+                    <div class="card-header bg-primary text-white fw-bold py-3">Pilih Produk Belanjaan</div>
+                    <div class="card-body p-3">
+                        <div class="mb-3">
+                            <input type="text" class="form-control form-control-lg border-primary" id="inputCariMenu" placeholder="🔍 Cari nama atau kode produk di sini..." autocomplete="off">
+                        </div>
+                        
+                        <div id="gridProduk" class="row row-cols-2 row-cols-lg-3 g-3" style="max-height: 65vh; overflow-y: auto; padding-right: 5px;">
+                            <div class="col-12 text-center text-muted py-4">Memuat daftar produk...</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-8 p-4 rounded bg-white shadow-sm" style="border-left: 3px dashed #dee2e6;">
+            <div class="col-md-6 p-4 rounded bg-white shadow-sm" style="border-left: 3px dashed #dee2e6;">
                 <h4 class="fw-bold mb-3 text-dark">Subtotal Belanjaan</h4>
                 <div class="table-responsive mb-4 border rounded">
                     <table class="table table-hover align-middle text-center w-100 m-0">
@@ -105,7 +100,7 @@
                             </tr>
                         </thead>
                         <tbody id="tabelKeranjang">
-                            <tr><td colspan="7" class="text-muted py-4">Keranjang kosong. Ketik barang di sebelah kiri.</td></tr>
+                            <tr><td colspan="7" class="text-muted py-4">Keranjang kosong. Klik produk di sebelah kiri.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -167,8 +162,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let idTrxAktif = null;
-        let debounceTimer;
         let globalCartItems = []; 
+        let dataSemuaBarang = []; // Menyimpan master data barang untuk filter lokal
 
         document.addEventListener('DOMContentLoaded', async () => {
             const today = new Date();
@@ -177,6 +172,7 @@
 
             await cekSession();
             await muatKeranjang();
+            await muatMenuBarang(); // Memuat menu berbentuk kartu
             await muatLaporan();
             document.getElementById('inputTanggalLaporan').addEventListener('change', muatLaporan);
         });
@@ -199,113 +195,92 @@
             window.location.href = 'login.html';
         });
 
-        // FUNGSI PENCARIAN
-        const inputCari = document.getElementById('inputCariBarang');
-        const dropdown  = document.getElementById('dropdownBarang');
-
-        inputCari.addEventListener('input', () => {
-            clearTimeout(debounceTimer);
-            const q = inputCari.value.trim();
-            if (q.length < 1) { dropdown.classList.add('d-none'); return; }
-
-            debounceTimer = setTimeout(async () => {
-                try {
-                    const res  = await fetch(`barang.php?cari=${encodeURIComponent(q)}`, { credentials: 'same-origin' });
-                    const json = await res.json();
-                    const list = json.data ?? [];
-
-                    if (list.length === 0) { 
-                        dropdown.innerHTML = '<div class="p-3 text-muted small text-center">Barang tidak ditemukan / Stok habis</div>';
-                        dropdown.classList.remove('d-none');
-                        return; 
-                    }
-
-                    dropdown.innerHTML = list.map(b => `
-                        <div class="item p-3 border-bottom text-start text-dark" style="cursor: pointer; background: #fff;" 
-                             data-pk="${b.id}" data-kode="${esc(b.kode_produk)}"
-                             data-nama="${esc(b.nama_produk)}" data-harga="${b.harga}" data-stok="${b.stok}"
-                             onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='#fff'">
-                            <strong class="text-primary fs-6">${esc(b.nama_produk)}</strong>
-                            <div class="text-muted small mt-1">Kode: ${esc(b.kode_produk)} | Harga: ${formatRupiah(b.harga)} | Stok: <span class="fw-bold">${b.stok} Pcs</span></div>
-                        </div>
-                    `).join('');
-                    dropdown.classList.remove('d-none');
-
-                    dropdown.querySelectorAll('.item').forEach(el => {
-                        el.addEventListener('click', () => {
-                            pilihBarang(el.dataset.pk, el.dataset.kode, el.dataset.nama, el.dataset.harga, el.dataset.stok);
-                        });
-                    });
-                } catch { dropdown.classList.add('d-none'); }
-            }, 300);
-        });
-
-        inputCari.addEventListener('focus', () => {
-            if (inputCari.value.trim().length >= 1 && dropdown.innerHTML.includes('item')) {
-                dropdown.classList.remove('d-none');
+        // FUNGSI MEMUAT MENU BERBENTUK GRID KARTU (POS SYSTEM)
+        async function muatMenuBarang() {
+            const grid = document.getElementById('gridProduk');
+            try {
+                const res = await fetch('barang.php', { credentials: 'same-origin' });
+                const json = await res.json();
+                dataSemuaBarang = json.data ?? [];
+                tampilkanGridMenu(dataSemuaBarang);
+            } catch {
+                grid.innerHTML = '<div class="col-12 text-center text-danger py-3">Gagal mengambil data produk dari server.</div>';
             }
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.wrapper-cari')) dropdown.classList.add('d-none');
-        });
-
-        function pilihBarang(pk, kode, nama, harga, stok) {
-            document.getElementById('selectedIdBarang').value  = pk;
-            document.getElementById('inputCariBarang').value   = nama;
-            document.getElementById('displayKodeBarang').value = kode;
-            document.getElementById('displayHarga').value      = formatRupiah(harga); // Hanya menampilkan harga asli
-            document.getElementById('displayStok').value       = stok + ' Pcs';
-            document.getElementById('inputQty').max            = stok;
-            dropdown.classList.add('d-none');
-            
-            // Fokus otomatis ke Qty setelah barang dipilih agar lebih cepat
-            document.getElementById('inputQty').focus(); 
         }
 
-        // FUNGSI TAMBAH BARANG
-        document.getElementById('formBelanja').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const idBarang = document.getElementById('selectedIdBarang').value;
-            const qty      = parseInt(document.getElementById('inputQty').value);
+        function tampilkanGridMenu(listProduk) {
+            const grid = document.getElementById('gridProduk');
+            if (listProduk.length === 0) {
+                grid.innerHTML = '<div class="col-12 text-center text-muted py-4">Produk tidak ditemukan / Stok kosong.</div>';
+                return;
+            }
 
-            if (!idBarang) { showAlert('Pilih barang terlebih dahulu dari dropdown!', 'warning'); return; }
-            if (qty < 1)   { showAlert('Qty minimal 1.', 'warning'); return; }
+            grid.innerHTML = listProduk.map(b => {
+                // Catatan: Menggunakan gambar placeholder berbasis teks nama barang (seperti di visualisasi)
+                // Jika punya folder gambar asli di server, silakan ganti src ke path gambar Anda (misal: `uploads/${b.gambar}`)
+                const URLGambarPlaceholder = `https://placehold.co/150x150/f8f9fa/007bff?text=${encodeURIComponent(b.nama_produk)}`;
 
-            const btn = document.getElementById('btnTambahItem');
-            btn.disabled = true;
+                return `
+                    <div class="col">
+                        <div class="card h-100 border border-light shadow-sm text-center p-2 rounded-3" 
+                             onclick="tambahItemOtomatis(${b.id}, ${b.stok})"
+                             style="cursor: pointer; transition: all 0.2s;"
+                             onmouseover="this.style.transform='scale(1.03)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.1)';"
+                             onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';">
+                            
+                            <img src="${URLGambarPlaceholder}" class="card-img-top mx-auto mt-1 rounded" style="width: 100px; height: 100px; object-fit: cover;" alt="${esc(b.nama_produk)}">
+                            
+                            <div class="card-body p-2 d-flex flex-column justify-content-between">
+                                <div>
+                                    <span class="badge bg-light text-secondary mb-1" style="font-size: 10px;">${esc(b.kode_produk)}</span>
+                                    <h6 class="card-title fw-bold text-dark text-truncate mb-1" style="font-size: 13px;" title="${esc(b.nama_produk)}">${esc(b.nama_produk)}</h6>
+                                </div>
+                                <div>
+                                    <p class="card-text text-success fw-bold small mb-0">${formatRupiah(b.harga)}</p>
+                                    <small class="d-block text-muted" style="font-size: 11px;">Stok: <span class="fw-bold ${b.stok < 5 ? 'text-danger' : 'text-dark'}">${b.stok} Pcs</span></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // FUNGSI PENCARIAN REAL-TIME DI SISI KLIEN
+        document.getElementById('inputCariMenu').addEventListener('input', function() {
+            const keyword = this.value.toLowerCase().trim();
+            const hasilFilter = dataSemuaBarang.filter(b => 
+                b.nama_produk.toLowerCase().includes(keyword) || 
+                b.kode_produk.toLowerCase().includes(keyword)
+            );
+            tampilkanGridMenu(hasilFilter);
+        });
+
+        // FUNGSI TAMBAH ITEM INSTAN SAAT KARTU DIKLIK (QTY DEFAULT = 1)
+        async function tambahItemOtomatis(idBarang, stokSekarang) {
+            if (stokSekarang <= 0) {
+                showAlert('Gagal! Stok gudang untuk produk ini sudah habis.', 'warning');
+                return;
+            }
 
             try {
-                const res  = await fetch('transaksi.php?action=tambah_item', {
+                const res = await fetch('transaksi.php?action=tambah_item', {
                     method:      'POST',
                     headers:     { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
-                    body:        JSON.stringify({ id_barang: parseInt(idBarang), qty: qty })
+                    body:        JSON.stringify({ id_barang: parseInt(idBarang), qty: 1 })
                 });
                 const json = await res.json();
 
                 if (json.status === 'success') {
-                    resetFormBelanja();
                     await muatKeranjang();
+                    await muatMenuBarang(); // Di-refresh agar info stok barang pada kartu langsung berkurang
                 } else {
                     showAlert(json.message, 'danger');
                 }
             } catch {
-                showAlert('Gagal terhubung ke server.', 'danger');
-            } finally {
-                btn.disabled = false;
+                showAlert('Gagal terhubung ke server transaksi.', 'danger');
             }
-        });
-
-        function resetFormBelanja() {
-            document.getElementById('selectedIdBarang').value  = '';
-            document.getElementById('inputCariBarang').value   = '';
-            document.getElementById('displayKodeBarang').value = '';
-            document.getElementById('displayHarga').value      = '';
-            document.getElementById('displayStok').value       = '';
-            document.getElementById('inputQty').value          = 1;
-            
-            document.getElementById('inputCariBarang').focus();
         }
 
         // FUNGSI MUAT KERANJANG & PERHITUNGAN LABA
@@ -321,7 +296,7 @@
 
                 const tbody = document.getElementById('tabelKeranjang');
                 if (items.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-muted py-4">Keranjang kosong. Ketik barang di sebelah kiri.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-muted py-4">Keranjang kosong. Klik produk di sebelah kiri.</td></tr>';
                     document.getElementById('uiTotalAsli').textContent  = 'Rp 0';
                     document.getElementById('uiTotalLaba').textContent  = 'Rp 0';
                     document.getElementById('uiTotalAkhir').textContent = 'Rp 0';
@@ -377,12 +352,15 @@
                     method: 'DELETE', credentials: 'same-origin'
                 });
                 const json = await res.json();
-                if (json.status === 'success') { await muatKeranjang(); } 
+                if (json.status === 'success') { 
+                    await muatKeranjang(); 
+                    await muatMenuBarang(); // Di-refresh agar stok di sistem kartu kembali bertambah
+                } 
                 else { showAlert(json.message, 'danger'); }
             } catch { showAlert('Gagal menghapus item.', 'danger'); }
         }
 
-        // 4. CHECKOUT & CETAK STRUK
+        // CHECKOUT & CETAK STRUK
         document.getElementById('btnCheckout').addEventListener('click', async () => {
             const nominalTunaiText = prompt("Selesaikan Transaksi\nMasukkan nominal uang tunai dari pelanggan (contoh: 50000):", "");
             if (nominalTunaiText === null) return; 
@@ -414,6 +392,7 @@
                     );
 
                     await muatKeranjang();
+                    await muatMenuBarang(); // Kembalikan info stok asli pasca checkout mutasi selesai
                     await muatLaporan();
                 } else { showAlert(json.message, 'danger'); }
             } catch { showAlert('Gagal melakukan checkout.', 'danger'); }
@@ -508,7 +487,9 @@
         }
 
         function formatRupiah(n) { return 'Rp ' + parseInt(n).toLocaleString('id-ID'); }
-        function esc(str) { return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+        // Fungsi Escaping untuk mencegah serangan XSS
+        function esc(str) { return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g, '&#039;'); }
+        
         function showAlert(msg, type) {
             const el = document.getElementById('alertGlobal');
             el.className   = `alert alert-${type} mb-3`;
